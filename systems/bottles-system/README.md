@@ -1,18 +1,18 @@
-# bottles-system
+# Multi-Bottle System
 
-![bottles-system](screenshots/00_thumb.png)
+![Multi-Bottle System](00_thumb.png)
 
 ## Description
 
-[object Object]
+A system for reusing bottles with different sizes
 
 ## Information
 
 | Field | Value |
 |---|---|
 | Slug | `bottles-system` |
-| Author | _Unknown author_ |
-| License | [object Object] |
+| Author | Andrea Rossi |
+| License | CC-BY-4.0 |
 | Tags | _No tags_ |
 
 ## Files
@@ -22,4 +22,4 @@
 
 ---
 
-This README was generated automatically from `meta.json`.
+This README was generated automatically from `meta.json` by `scripts/build_catalog.mjs`.

@@ -1,20 +1,19 @@
 {
-  "generated_at": "2026-07-05T09:27:05.048Z",
+  "generated_at": "2026-07-05T10:19:04.060Z",
   "count": 1,
   "systems": [
     {
       "slug": "bottles-system",
-      "name": "bottles-system",
-      "description": {
-        "short": "A system for reusing bottles with different sizes",
-        "long": ""
-      },
+      "name": "Multi-Bottle System",
+      "description": "A system for reusing bottles with different sizes",
+      "description_long": "",
       "tags": [],
-      "license": {
-        "value": "CC-BY-4.0"
-      },
-      "author": "",
-      "thumbnail": "systems/bottles-system/screenshots/00_thumb.png",
+      "license": "CC-BY-4.0",
+      "author": "Andrea Rossi",
+      "authors": [
+        "Andrea Rossi"
+      ],
+      "thumbnail": "systems/bottles-system/00_thumb.png",
       "aggregation_url": "systems/bottles-system/aggregation.json",
       "meta_url": "systems/bottles-system/meta.json"
     }

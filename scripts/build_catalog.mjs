@@ -28,6 +28,83 @@ function safeSlugFromFolder(folderName) {
   return folderName;
 }
 
+function firstNonEmptyString(values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function normalizeDescription(description) {
+  if (typeof description === "string") {
+    return { short: description.trim(), long: "" };
+  }
+
+  if (description && typeof description === "object") {
+    return {
+      short: typeof description.short === "string" ? description.short.trim() : "",
+      long: typeof description.long === "string" ? description.long.trim() : ""
+    };
+  }
+
+  return { short: "", long: "" };
+}
+
+function normalizeLicense(license) {
+  if (typeof license === "string") return license.trim();
+  if (license && typeof license === "object" && typeof license.value === "string") {
+    return license.value.trim();
+  }
+  return "";
+}
+
+function normalizeAuthors(meta) {
+  if (typeof meta.author === "string" && meta.author.trim()) {
+    return [meta.author.trim()];
+  }
+
+  if (Array.isArray(meta.authors)) {
+    return meta.authors
+      .map(a => {
+        if (typeof a === "string") return a.trim();
+        if (a && typeof a === "object" && typeof a.name === "string") return a.name.trim();
+        return "";
+      })
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function normalizeTags(tags) {
+  if (!Array.isArray(tags)) return [];
+
+  return tags
+    .map(tag => {
+      if (typeof tag === "string") return tag.trim();
+      if (tag && typeof tag === "object" && typeof tag.value === "string") return tag.value.trim();
+      return "";
+    })
+    .filter(Boolean);
+}
+
+function resolveThumbnail(slug, meta, sysDir) {
+  const fromMeta = meta?.files?.thumbnail;
+  const fallback = "00_thumb.png";
+  const raw = typeof fromMeta === "string" && fromMeta.trim() ? fromMeta.trim() : fallback;
+
+  const withoutLeading = raw.replace(/^\.\//, "").replace(/^\//, "");
+  const withoutSlugPrefix = withoutLeading.startsWith(`${slug}/`)
+    ? withoutLeading.slice(slug.length + 1)
+    : withoutLeading;
+
+  const localPath = path.join(sysDir, withoutSlugPrefix);
+  assert(exists(localPath), `Missing ${path.relative(REPO_ROOT, localPath)} (required thumbnail)`);
+
+  const repoRelative = path.posix.join("systems", slug, withoutSlugPrefix.split(path.sep).join("/"));
+  return repoRelative;
+}
+
 function buildSystemsIndex() {
   assert(exists(SYSTEMS_DIR), `Missing folder: ${SYSTEMS_DIR}`);
 
@@ -44,29 +121,30 @@ function buildSystemsIndex() {
 
     const aggregationPath = path.join(sysDir, "aggregation.json");
     const metaPath = path.join(sysDir, "meta.json");
-    const thumbPath = path.join(sysDir, "00_thumb.png");
-
     // required files
     assert(exists(aggregationPath), `Missing ${path.relative(REPO_ROOT, aggregationPath)}`);
     assert(exists(metaPath), `Missing ${path.relative(REPO_ROOT, metaPath)}`);
-    assert(exists(thumbPath), `Missing ${path.relative(REPO_ROOT, thumbPath)} (required thumbnail)`);
 
     const meta = readJson(metaPath);
+    const description = normalizeDescription(meta.description);
+    const authors = normalizeAuthors(meta);
+    const thumbnail = resolveThumbnail(slug, meta, sysDir);
 
-    const name = meta.name ?? slug;
-    const description = meta.description ?? "";
-    const tags = Array.isArray(meta.tags) ? meta.tags : [];
-    const license = meta.license ?? "";
-    const author = meta.author ?? "";
+    const name = firstNonEmptyString([meta.title, meta.name, slug]);
+    const tags = normalizeTags(meta.tags);
+    const license = normalizeLicense(meta.license);
+    const author = authors.join(", ");
 
     systems.push({
       slug,
       name,
-      description,
+      description: description.short,
+      description_long: description.long,
       tags,
       license,
       author,
-      thumbnail: `systems/${slug}/00_thumb.png`,
+      authors,
+      thumbnail,
       aggregation_url: `systems/${slug}/aggregation.json`,
       meta_url: `systems/${slug}/meta.json`
     });
@@ -96,9 +174,11 @@ function buildSystemReadme(system) {
     ? system.tags.map(t => `\`${t}\``).join(" ")
     : "_No tags_";
 
-  const description = system.description
-    ? system.description
-    : "_No description provided._";
+  const descriptionShort = system.description || "_No description provided._";
+  const descriptionLong = system.description_long || "";
+  const description = descriptionLong
+    ? `${descriptionShort}\n\n${descriptionLong}`
+    : descriptionShort;
 
   const author = system.author
     ? system.author
@@ -110,7 +190,7 @@ function buildSystemReadme(system) {
 
   return `# ${system.name}
 
-![${system.name}](screenshots/00_thumb.png)
+![${system.name}](00_thumb.png)
 
 ## Description
 
@@ -132,7 +212,7 @@ ${description}
 
 ---
 
-This README was generated automatically from \`meta.json\`.
+This README was generated automatically from \`meta.json\` by \`scripts/build_catalog.mjs\`.
 `;
 }
 
